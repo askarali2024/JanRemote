@@ -1,0 +1,11 @@
+# virtualenv
+.venv/
+venv/
+
+# local runtime state
+config.json
+__pycache__/
+*.pyc
+
+# pyvidaa token store (never commit)
+.config/

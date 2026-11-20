@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>JanRemote</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { -webkit-tap-highlight-color: transparent; }
+    .btn { user-select: none; -webkit-user-select: none; touch-action: manipulation;
+           transition: transform .06s ease, background-color .12s ease; }
+    .btn:active { transform: scale(.94); }
+    input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; }
+    input[type="range"]::-webkit-slider-runnable-track { height: 8px; border-radius: 9999px;
+      background: linear-gradient(to right, #10b981 var(--fill,50%), #262626 var(--fill,50%)); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+      width: 26px; height: 26px; border-radius: 9999px; background: #fafafa; margin-top: -9px;
+      box-shadow: 0 0 0 4px rgba(16,185,129,.25); }
+    input[type="range"]::-moz-range-track { height: 8px; border-radius: 9999px; background: #262626; }
+    input[type="range"]::-moz-range-progress { height: 8px; border-radius: 9999px; background: #10b981; }
+    input[type="range"]::-moz-range-thumb { width: 26px; height: 26px; border: none;
+      border-radius: 9999px; background: #fafafa; box-shadow: 0 0 0 4px rgba(16,185,129,.25); }
+    select { color-scheme: dark; }
+    .pulse-dot { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+    @keyframes pulse { 50% { opacity: .45; } }
+  </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100 min-h-screen antialiased">
+
+<div class="mx-auto max-w-md px-4 pb-16 pt-4" style="padding-top:max(1rem, env(safe-area-inset-top))">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30
+                  flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="13" rx="2"/><path d="m8 3 4 4 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight" id="tvName">JanRemote</h1>
+        <p class="text-xs text-neutral-500 leading-tight">
+          <span id="statusDot" class="inline-block w-2 h-2 rounded-full bg-neutral-600 align-middle"></span>
+          <span id="statusText" class="align-middle ml-1">checking…</span>
+        </p>
+      </div>
+    </div>
+    <button onclick="openSettings()" class="btn w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800
+            flex items-center justify-center active:bg-neutral-800">
+      <svg class="w-5 h-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Power -->
+  <section class="grid grid-cols-2 gap-3 mb-3">
+    <button onclick="powerOn()" class="btn py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/40
+            font-semibold text-emerald-400 active:bg-emerald-500/20">
+      <svg class="w-5 h-5 inline mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>
+      </svg>
+      <span class="ml-1.5">Power On</span>
+    </button>
+    <button onclick="powerOff()" class="btn py-4 rounded-2xl bg-red-500/10 border border-red-500/40
+            font-semibold text-red-400 active:bg-red-500/20">
+      <svg class="w-5 h-5 inline mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>
+      </svg>
+      <span class="ml-1.5">Power Off</span>
+    </button>
+  </section>
+
+  <!-- Volume -->
+  <section class="rounded-2xl bg-neutral-900 border border-neutral-800 p-4 mb-3">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs uppercase tracking-widest text-neutral-500 font-semibold">Volume</span>
+      <span id="volLabel" class="text-sm font-bold text-emerald-400 tabular-nums">--</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button data-repeat onclick="api('POST','/api/volume/down')" class="btn w-11 h-11 shrink-0 rounded-xl bg-neutral-800 active:bg-neutral-700 text-lg font-bold">−</button>
+      <input id="volSlider" type="range" min="0" max="100" value="50" class="w-full" />
+      <button data-repeat onclick="api('POST','/api/volume/up')" class="btn w-11 h-11 shrink-0 rounded-xl bg-neutral-800 active:bg-neutral-700 text-lg font-bold">+</button>
+    </div>
+    <button onclick="api('POST','/api/volume/mute')" class="btn mt-3 w-full py-2.5 rounded-xl bg-neutral-800 active:bg-neutral-700 text-sm font-semibold text-neutral-300">
+      <svg class="w-4 h-4 inline mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M11 5 6 9H2v6h4l5 4V5zM22 9l-6 6M16 9l6 6"/>
+      </svg>
+      <span class="ml-1.5">Mute</span>
+    </button>
+  </section>
+
+  <!-- D-Pad -->
+  <section class="rounded-2xl bg-neutral-900 border border-neutral-800 p-4 mb-3">
+    <div class="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
+      <div></div>
+      <button data-repeat onclick="api('POST','/api/key',{key:'up'})" class="btn h-16 rounded-2xl bg-neutral-800 active:bg-neutral-700 flex items-center justify-center">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m18 15-6-6-6 6"/></svg>
+      </button>
+      <div></div>
+      <button data-repeat onclick="api('POST','/api/key',{key:'left'})" class="btn h-16 rounded-2xl bg-neutral-800 active:bg-neutral-700 flex items-center justify-center">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button onclick="api('POST','/api/key',{key:'ok'})" class="btn h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-bold tracking-wide active:bg-emerald-500/25">OK</button>
+      <button data-repeat onclick="api('POST','/api/key',{key:'right'})" class="btn h-16 rounded-2xl bg-neutral-800 active:bg-neutral-700 flex items-center justify-center">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <div></div>
+      <button data-repeat onclick="api('POST','/api/key',{key:'down'})" class="btn h-16 rounded-2xl bg-neutral-800 active:bg-neutral-700 flex items-center justify-center">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div></div>
+    </div>
+    <!-- Nav keys -->
+    <div class="grid grid-cols-4 gap-2 mt-4">
+      <button onclick="api('POST','/api/key',{key:'back'})" class="btn py-3 rounded-xl bg-neutral-800 active:bg-neutral-700 text-xs font-semibold">Back</button>
+      <button onclick="api('POST','/api/key',{key:'home'})" class="btn py-3 rounded-xl bg-neutral-800 active:bg-neutral-700 text-xs font-semibold">Home</button>
+      <button onclick="api('POST','/api/key',{key:'exit'})" class="btn py-3 rounded-xl bg-neutral-800 active:bg-neutral-700 text-xs font-semibold">Exit</button>
+      <button onclick="api('POST','/api/key',{key:'menu'})" class="btn py-3 rounded-xl bg-neutral-800 active:bg-neutral-700 text-xs font-semibold">Menu</button>
+    </div>
+  </section>
+
+  <!-- Playback -->
+  <section class="rounded-2xl bg-neutral-900 border border-neutral-800 p-4 mb-3">
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-3">Playback</p>
+    <div class="grid grid-cols-3 gap-3">
+      <button onclick="api('POST','/api/key',{key:'rewind'})" class="btn py-3.5 rounded-2xl bg-neutral-800 active:bg-neutral-700 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M11 12 22 3v18L11 12zM0 3v18l11-9L0 3z" transform="scale(.9) translate(1.3 1.3)"/></svg>
+      </button>
+      <button onclick="api('POST','/api/key',{key:'play'})" class="btn py-3.5 rounded-2xl bg-neutral-800 active:bg-neutral-700 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m10 24 6-6v-6l6 6" transform="translate(-7 -6)"/><path d="M5 3l14 9-14 9V3z"/></svg>
+      </button>
+      <button onclick="api('POST','/api/key',{key:'forward'})" class="btn py-3.5 rounded-2xl bg-neutral-800 active:bg-neutral-700 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M13 12 2 3v18l11-9zM24 3v18L13 12 24 3z" transform="scale(.9) translate(1.3 1.3)"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Quick switchers -->
+  <section class="rounded-2xl bg-neutral-900 border border-neutral-800 p-4 mb-3 space-y-3">
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold">Quick switch</p>
+
+    <label class="block">
+      <span class="text-xs text-neutral-400 mb-1 block">Input / HDMI</span>
+      <select id="sourceSelect" onchange="switchSource(this)"
+        class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-3 text-sm">
+        <option value="">— load inputs —</option>
+      </select>
+    </label>
+
+    <label class="block">
+      <span class="text-xs text-neutral-400 mb-1 block">Apps</span>
+      <select id="appSelect" onchange="launchSelectedApp(this)"
+        class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-3 text-sm">
+        <option value="">— load apps —</option>
+      </select>
+    </label>
+
+    <button onclick="loadQuickSwitchers(true)"
+      class="btn w-full py-2.5 rounded-xl bg-neutral-800 active:bg-neutral-700 text-xs font-semibold text-neutral-400">
+      <svg class="w-4 h-4 inline mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>
+      </svg>
+      <span class="ml-1">Refresh lists from TV</span>
+    </button>
+  </section>
+
+  <!-- Keyboard -->
+  <section class="rounded-2xl bg-neutral-900 border border-neutral-800 p-4 mb-3">
+    <p class="text-xs uppercase tracking-widest text-neutral-500 font-semibold mb-3">Keyboard</p>
+    <div class="flex gap-2">
+      <input id="textInput" type="text" placeholder="Type to search on the TV…" autocomplete="off"
+        onkeydown="if(event.key==='Enter')sendText()"
+        class="flex-1 min-w-0 bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm placeholder-neutral-600 focus:outline-none focus:border-emerald-500/60" />
+      <button onclick="sendText()" class="btn px-5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-semibold text-sm active:bg-emerald-500/25">Send</button>
+    </div>
+    <p class="text-[11px] text-neutral-600 mt-2">Focus a search field on the TV first. Some firmware ignores direct text input — use the D-pad then.</p>
+  </section>
+
+  <p class="text-center text-[11px] text-neutral-700">JanRemote · local network only</p>
+</div>
+
+<!-- ============ Setup / Settings modal ============ -->
+<div id="settingsModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/80" onclick="closeModals()"></div>
+  <div class="absolute inset-x-0 bottom-0 top-auto sm:inset-0 sm:m-auto sm:h-fit sm:max-w-md">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h2 id="settingsTitle" class="font-bold text-lg">Set up your TV</h2>
+        <button onclick="closeModals()" class="btn w-9 h-9 rounded-xl bg-neutral-800 flex items-center justify-center text-neutral-400">✕</button>
+      </div>
+
+      <label class="block mb-4">
+        <span class="text-xs text-neutral-400 mb-1 block">TV name</span>
+        <input id="cfgName" type="text" value="Hisense TV"
+          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-emerald-500/60" />
+      </label>
+      <label class="block mb-4">
+        <span class="text-xs text-neutral-400 mb-1 block">TV IP address</span>
+        <input id="cfgIp" type="text" inputmode="url" placeholder="192.168.1.50"
+          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-emerald-500/60" />
+      </label>
+      <label class="block mb-4">
+        <span class="text-xs text-neutral-400 mb-1 block">TV MAC address <span class="text-neutral-600">(for Wake-on-LAN)</span></span>
+        <input id="cfgMac" type="text" placeholder="AA:BB:CC:DD:EE:FF"
+          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-emerald-500/60" />
+      </label>
+
+      <button onclick="discover()" id="discoverBtn"
+        class="btn w-full py-2.5 mb-2 rounded-xl bg-neutral-800 active:bg-neutral-700 text-xs font-semibold text-neutral-300">
+        Scan network for TVs
+      </button>
+      <div id="discoverResults" class="mb-4 space-y-2"></div>
+
+      <button id="saveBtn" onclick="saveConfig()"
+        class="btn w-full py-3.5 rounded-xl bg-emerald-500 text-neutral-950 font-bold active:bg-emerald-400">
+        Save &amp; Connect
+      </button>
+
+      <div id="settingsExtras" class="hidden mt-4 space-y-2">
+        <button onclick="startPairing()" class="btn w-full py-2.5 rounded-xl bg-neutral-800 active:bg-neutral-700 text-xs font-semibold text-neutral-300">
+          Re-pair with TV (new PIN)
+        </button>
+        <p class="text-[11px] text-neutral-600 text-center">Config is stored in config.json next to app.py</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PIN pairing modal ============ -->
+<div id="pinModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/80"></div>
+  <div class="absolute inset-0 m-auto h-fit max-w-md px-4">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6">
+      <h2 class="font-bold text-lg mb-1">Enter the PIN</h2>
+      <p class="text-sm text-neutral-400 mb-5">A 4-digit code is showing on your TV screen. It expires in ~60 seconds.</p>
+      <input id="pinInput" type="text" inputmode="numeric" maxlength="4" placeholder="••••"
+        onkeydown="if(event.key==='Enter')submitPin()"
+        class="w-full text-center text-3xl tracking-[.5em] font-bold bg-neutral-800 border border-neutral-700 rounded-2xl px-3 py-4 mb-4 focus:outline-none focus:border-emerald-500/60" />
+      <div class="flex gap-2">
+        <button onclick="hide('pinModal')" class="btn flex-1 py-3 rounded-xl bg-neutral-800 active:bg-neutral-700 text-sm font-semibold">Cancel</button>
+        <button onclick="submitPin()" id="pinSubmitBtn" class="btn flex-1 py-3 rounded-xl bg-emerald-500 text-neutral-950 font-bold text-sm active:bg-emerald-400">Pair</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 z-[60] hidden">
+  <div id="toastBody" class="bg-neutral-800 border border-neutral-700 text-sm px-4 py-2.5 rounded-xl shadow-xl max-w-xs text-center"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+/* ---------- helpers ---------- */
+async function api(method, path, body) {
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { toast(data.detail || `Error ${res.status}`, 'err'); return null; }
+    return data;
+  } catch (e) {
+    toast('Could not reach the server — is app.py still running?', 'err');
+    return null;
+  }
+}
+
+let toastTimer;
+function toast(msg, kind = 'ok') {
+  const el = $('toast'), body = $('toastBody');
+  body.textContent = msg;
+  body.className = 'text-sm px-4 py-2.5 rounded-xl shadow-xl max-w-xs text-center border ' +
+    (kind === 'err'
+      ? 'bg-red-500/15 border-red-500/40 text-red-300'
+      : 'bg-neutral-800 border-neutral-700 text-neutral-100');
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), kind === 'err' ? 4000 : 2200);
+}
+
+function show(id) { $(id).classList.remove('hidden'); }
+function hide(id) { $(id).classList.add('hidden'); }
+function closeModals() { hide('settingsModal'); hide('pinModal'); }
+
+/* hold-to-repeat for d-pad / volume */
+document.querySelectorAll('[data-repeat]').forEach((btn) => {
+  let timer = null, count = 0;
+  const start = (e) => { e.preventDefault(); btn.click();
+    timer = setInterval(() => btn.click(), 350); count++; };
+  const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  btn.addEventListener('pointerdown', start);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, stop));
+});
+
+/* ---------- status polling ---------- */
+let sliderDragging = false;
+async function refreshStatus() {
+  const s = await api('GET', '/api/status');
+  if (!s) return;
+  const dot = $('statusDot'), txt = $('statusText');
+  if (!s.configured) {
+    dot.className = 'inline-block w-2 h-2 rounded-full bg-neutral-600 align-middle';
+    txt.textContent = 'not set up';
+    openSettings(true);
+    return;
+  }
+  $('tvName').textContent = s.name || 'JanRemote';
+  if (s.connected && s.on) {
+    dot.className = 'inline-block w-2 h-2 rounded-full bg-emerald-400 pulse-dot align-middle';
+    txt.textContent = 'connected · on' + (s.state ? ` · ${s.state}` : '');
+  } else if (s.connected) {
+    dot.className = 'inline-block w-2 h-2 rounded-full bg-amber-400 align-middle';
+    txt.textContent = 'connected · standby';
+  } else {
+    dot.className = 'inline-block w-2 h-2 rounded-full bg-red-500 align-middle';
+    txt.textContent = 'unreachable';
+  }
+  if (typeof s.volume === 'number' && !sliderDragging) {
+    $('volSlider').value = s.volume;
+    updateSlider(s.volume);
+  }
+}
+function updateSlider(v) {
+  $('volLabel').textContent = v;
+  $('volSlider').style.setProperty('--fill', v + '%');
+}
+setInterval(refreshStatus, 4000);
+
+/* volume slider */
+const slider = $('volSlider');
+slider.addEventListener('pointerdown', () => (sliderDragging = true));
+slider.addEventListener('pointerup', () => (sliderDragging = false));
+let volTimer;
+slider.addEventListener('input', () => {
+  updateSlider(slider.value);
+  clearTimeout(volTimer);
+  volTimer = setTimeout(() => api('POST', '/api/volume', { level: +slider.value }), 250);
+});
+updateSlider(50);
+
+/* ---------- power ---------- */
+async function powerOn() {
+  const r = await api('POST', '/api/power/on');
+  if (r) { toast(r.message); setTimeout(refreshStatus, 4000); }
+}
+async function powerOff() {
+  const r = await api('POST', '/api/power/off');
+  if (r) { toast(r.message); setTimeout(refreshStatus, 1500); }
+}
+
+/* ---------- settings / setup ---------- */
+let everConfigured = false;
+function openSettings(firstTime = false) {
+  $('settingsTitle').textContent = firstTime ? 'Set up your TV' : 'Settings';
+  $('settingsExtras').classList.toggle('hidden', firstTime);
+  show('settingsModal');
+  api('GET', '/api/config').then((c) => {
+    if (!c) return;
+    $('cfgName').value = c.name || 'Hisense TV';
+    $('cfgIp').value = c.ip || '';
+    $('cfgMac').value = c.mac || '';
+    everConfigured = !!c.configured;
+  });
+}
+async function saveConfig() {
+  const r = await api('POST', '/api/config', {
+    name: $('cfgName').value.trim() || 'Hisense TV',
+    ip: $('cfgIp').value.trim(),
+    mac: $('cfgMac').value.trim(),
+  });
+  if (!r) return;
+  toast(r.message);
+  hide('settingsModal');
+  /* first pair after saving a new TV */
+  if (!everConfigured) { setTimeout(startPairing, 600); }
+  else setTimeout(refreshStatus, 800);
+  loadQuickSwitchers();
+}
+async function discover() {
+  const btn = $('discoverBtn'), out = $('discoverResults');
+  btn.textContent = 'Scanning… (up to 5s)';
+  const r = await api('POST', '/api/discover');
+  btn.textContent = 'Scan network for TVs';
+  if (!r) return;
+  out.innerHTML = '';
+  if (!r.devices.length) {
+    out.innerHTML = '<p class="text-xs text-neutral-500">No TVs found. Make sure the TV is on and on this network, then enter its IP/MAC manually (TV Settings → Network → Status).</p>';
+    return;
+  }
+  r.devices.forEach((d) => {
+    const b = document.createElement('button');
+    b.className = 'btn w-full text-left px-3.5 py-3 rounded-xl bg-neutral-800 active:bg-neutral-700';
+    b.innerHTML = `<span class="text-sm font-semibold">${d.name}</span>
+      <span class="block text-[11px] text-neutral-500">${d.ip}${d.mac ? ' · ' + d.mac : ''}${d.model ? ' · ' + d.model : ''}</span>`;
+    b.onclick = () => {
+      $('cfgIp').value = d.ip;
+      if (d.mac) $('cfgMac').value = d.mac;
+      toast(`Filled in ${d.name}`);
+    };
+    out.appendChild(b);
+  });
+}
+
+/* ---------- pairing ---------- */
+async function startPairing() {
+  closeModals();
+  toast('Sending pairing request — watch your TV screen…');
+  const r = await api('POST', '/api/pair/start');
+  if (!r) return;
+  if (r.pin_prompted) {
+    $('pinInput').value = '';
+    show('pinModal');
+    setTimeout(() => $('pinInput').focus(), 50);
+  } else {
+    toast(r.message, 'err');
+    setTimeout(refreshStatus, 1000);
+  }
+}
+async function submitPin() {
+  const pin = $('pinInput').value.trim();
+  if (!/^\d{4}$/.test(pin)) { toast('PIN must be 4 digits', 'err'); return; }
+  const r = await api('POST', '/api/pair/pin', { pin });
+  if (!r) return;
+  toast(r.message);
+  hide('pinModal');
+  refreshStatus();
+  loadQuickSwitchers();
+}
+
+/* ---------- quick switchers ---------- */
+async function loadQuickSwitchers(alertOnFail = false) {
+  const [src, apps] = await Promise.all([
+    api('GET', '/api/sources'),
+    api('GET', '/api/apps'),
+  ]);
+  if (src && src.sources) {
+    const sel = $('sourceSelect');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Select input…</option>' +
+      src.sources.map((s) => {
+        const label = s.displayname || s.sourcename || s.sourceid;
+        return `<option value="${s.sourcename || s.sourceid}">${label}</option>`;
+      }).join('');
+    if (prev) sel.value = prev;
+  } else if (alertOnFail && !src) {
+    /* api() already toasted the error */
+  }
+  if (apps && apps.apps) {
+    const sel = $('appSelect');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Select app…</option>' +
+      apps.apps.map((a, i) => `<option value="${i}">${a.name || a.url || 'App'}</option>`).join('');
+    if (prev) sel.value = prev;
+    sel._apps = apps.apps;
+  }
+}
+function switchSource(sel) {
+  if (sel.value) api('POST', '/api/source', { source: sel.value });
+}
+function launchSelectedApp(sel) {
+  if (sel.value === '' || !sel._apps) return;
+  const app = sel._apps[+sel.value];
+  if (app) api('POST', '/api/app', { app });
+}
+
+/* ---------- keyboard ---------- */
+async function sendText() {
+  const input = $('textInput');
+  const text = input.value;
+  if (!text.trim()) return;
+  const r = await api('POST', '/api/text', { text });
+  if (r) { toast(r.message); input.value = ''; input.blur(); }
+}
+
+/* ---------- boot ---------- */
+refreshStatus();
+loadQuickSwitchers();
+</script>
+</body>
+</html>
