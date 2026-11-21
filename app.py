@@ -334,6 +334,57 @@ def pair_pin(payload: PinPayload):
     return {"ok": True, "message": message}
 
 
+@app.post("/api/diagnose")
+def diagnose():
+    """Step-by-step connection diagnosis with distinct causes."""
+    cfg = load_config()
+    if not cfg["ip"]:
+        return JSONResponse(
+            status_code=400, content={"detail": "No TV configured yet — save one first."}
+        )
+    ip, port = cfg["ip"], cfg["port"]
+    out: dict[str, Any] = {"ip": ip, "port": port}
+
+    # Step 1: can we even open a TCP connection to the TV's MQTT port?
+    try:
+        s = socket.create_connection((ip, port), timeout=5)
+        s.close()
+        out["tcp"] = True
+    except OSError as exc:
+        out["tcp"] = False
+        out["error"] = f"{type(exc).__name__}"
+        out["verdict"] = (
+            f"Cannot reach {ip}:{port} at all. Most likely causes: (1) the TV is "
+            "powered off or in deep standby — turn it ON with the physical remote "
+            "and retry; (2) wrong IP — verify on the TV under Settings → Network "
+            "→ Status; (3) the PC and TV are on different/isolated networks "
+            "(guest Wi-Fi, AP isolation, different subnets)."
+        )
+        return out
+
+    # Step 2: port is open — try the full MQTT/TLS/auth handshake.
+    try:
+        tv = controller.client()
+        out["mqtt"] = tv.is_connected
+        out["on"] = tv.is_on()
+        out["verdict"] = (
+            "Connected to the TV's MQTT broker successfully — the remote should work. "
+            + ("TV is on." if out["on"] else "TV appears to be in standby.")
+        )
+    except RemoteError as exc:
+        out["mqtt"] = False
+        out["verdict"] = (
+            f"The TV is reachable on {ip}:{port}, but the secure MQTT connection "
+            f"failed: {exc} — On 2024+ firmware this almost always means the client "
+            "certificate is missing. See the README section 'Obtaining the client "
+            "certificate' (one-time extraction from the VIDAA app APK), then retry."
+        )
+    except Exception as exc:  # unexpected — surface it rather than guess
+        out["mqtt"] = False
+        out["verdict"] = f"The TV is reachable, but connecting failed unexpectedly: {exc}"
+    return out
+
+
 @app.post("/api/power/on")
 def power_on():
     """Power on via Wake-on-LAN magic packet, then nudge with MQTT if possible."""

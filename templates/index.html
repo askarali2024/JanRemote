@@ -45,7 +45,7 @@
         <h1 class="font-bold text-lg leading-tight" id="tvName">JanRemote</h1>
         <p class="text-xs text-neutral-500 leading-tight">
           <span id="statusDot" class="inline-block w-2 h-2 rounded-full bg-neutral-600 align-middle"></span>
-          <span id="statusText" class="align-middle ml-1">checking…</span>
+          <button onclick="diagnose()" id="statusText" class="align-middle ml-1 underline decoration-dotted underline-offset-2 text-neutral-400 active:text-neutral-200">checking…</button>
         </p>
       </div>
     </div>
@@ -57,6 +57,14 @@
       </svg>
     </button>
   </header>
+
+  <!-- Diagnostics banner -->
+  <div id="diagBanner" class="hidden mb-3 rounded-2xl bg-neutral-900 border border-amber-500/30 p-4 text-sm text-amber-200/90 leading-relaxed">
+    <div class="flex items-start justify-between gap-3">
+      <p id="diagText" class="min-w-0"></p>
+      <button onclick="hide('diagBanner')" class="btn shrink-0 text-amber-200/60 text-xs px-1">✕</button>
+    </div>
+  </div>
 
   <!-- Power -->
   <section class="grid grid-cols-2 gap-3 mb-3">
@@ -439,6 +447,15 @@ async function submitPin() {
   hide('pinModal');
   refreshStatus();
   loadQuickSwitchers();
+}
+
+/* ---------- diagnostics ---------- */
+async function diagnose() {
+  toast('Running diagnostics…');
+  const r = await api('POST', '/api/diagnose');
+  if (!r) return;
+  $('diagText').textContent = r.verdict;
+  show('diagBanner');
 }
 
 /* ---------- quick switchers ---------- */
