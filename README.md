@@ -30,20 +30,54 @@ JanRemote/
 - On the TV, enable the remote-control app pairing if present:
   Settings → System → Application Settings → Remote Control (name varies by model)
 
-> **Modern-firmware note (mTLS):** VIDAA TVs from ~2024 onward require a client
-> certificate for the MQTT TLS handshake. `pyvidaa` cannot ship it; if pairing
-> fails to connect, extract it from the official VIDAA Android app once:
->
-> ```bash
-> # unzip the APK, find client_mobile_android.p12, then:
-> openssl pkcs12 -in client_mobile_android.p12 -clcerts -nokeys -out vidaa_client.pem
-> openssl pkcs12 -in client_mobile_android.p12 -nocerts -nodes -out vidaa_client.key
-> mkdir -p ~/.config/pyvidaa/certs
-> cp vidaa_client.pem vidaa_client.key ~/.config/pyvidaa/certs/
-> ```
->
-> See pyvidaa's README ("Obtaining the client certificate") for details.
-> Older TVs connect without it.
+> **Modern-firmware note (mTLS):** VIDAA TVs from ~2024 onward (protocol
+> version 3290+) require a client certificate for the MQTT TLS handshake.
+> `pyvidaa` cannot ship it; without it you'll see "unreachable" even though
+> the TV answers on the network. If diagnostics say *"TV is reachable, but the
+> secure MQTT connection failed"*, extract the certificate once, as follows.
+
+### Obtaining the client certificate (Windows walkthrough)
+
+The certificate ships inside the official Hisense remote app (RemoteNOW / VIDAA)
+as a PKCS#12 keystore. One-time extraction:
+
+1. **Get the APK** — download the RemoteNOW APK from
+   [APKMirror](https://www.apkmirror.com/apk/hisense/remotenow/) (any recent
+   version) on your PC. You don't need to install it.
+
+2. **Open it as an archive** — an APK is a zip. In Git Bash:
+   ```bash
+   mkdir apk && cd apk
+   unzip ~/Downloads/RemoteNow-*.apk
+   ```
+   Find the keystore — it's `assets/client_mobile_android.p12` in most builds,
+   or an obfuscated name like `res/3R.p12` in newer ones:
+   ```bash
+   find . -iname "*.p12"
+   ```
+
+3. **Convert it to PEM** (in Git Bash — it ships with `openssl`; the keystore
+   password is the one publicly documented in pyvidaa's protocol analysis):
+   ```bash
+   PK12=$(find . -iname "*.p12" | head -1)
+   openssl pkcs12 -in "$PK12" -clcerts -nokeys \
+     -passin pass:186e990688070325a1c4b0ce275d2388 -out vidaa_client.pem
+   openssl pkcs12 -in "$PK12" -nocerts -nodes \
+     -passin pass:186e990688070325a1c4b0ce275d2388 -out vidaa_client.key
+   ```
+
+4. **Put the two files in the project's `certs/` folder:**
+   ```bash
+   mkdir -p /path/to/JanRemote/certs
+   cp vidaa_client.pem vidaa_client.key /path/to/JanRemote/certs/
+   ```
+   (Alternatively: `%USERPROFILE%\.config\pyvidaa\certs\`, or set the
+   `PYVIDAA_CERT_DIR` environment variable.)
+
+5. **Restart `python app.py`.** The startup log should say
+   `Using client certificate from ...certs` instead of warning about a missing
+   certificate. Then run diagnostics again — the MQTT handshake should now
+   succeed, and you can pair.
 
 ## 2. Install & run
 

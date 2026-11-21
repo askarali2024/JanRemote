@@ -61,6 +61,20 @@ DEFAULT_CONFIG: dict[str, Any] = {
 # Not every firmware implements it — some quietly ignore it.
 TOPIC_SEND_TEXT = "/remoteapp/tv/ui_service/{client}/actions/sendtext"
 
+# Optional mTLS client certificate for 2024+ firmware TVs. pyvidaa checks
+# ~/.config/pyvidaa/certs/ itself; we also check a certs/ folder next to app.py
+# and pass it explicitly, so dropping the files in the project folder works.
+CERT_DIR = BASE_DIR / "certs"
+
+
+def _cert_kwargs() -> dict[str, str]:
+    cert = CERT_DIR / "vidaa_client.pem"
+    key = CERT_DIR / "vidaa_client.key"
+    if cert.is_file() and key.is_file():
+        log.info("Using client certificate from %s", CERT_DIR)
+        return {"certfile": str(cert), "keyfile": str(key)}
+    return {}
+
 MAC_RE = re.compile(r"^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$")
 
 
@@ -141,6 +155,7 @@ class TVController:
                 port=cfg["port"],
                 mac_address=cfg["mac"] or None,
                 use_dynamic_auth=True,  # auto-detects firmware auth generation
+                **_cert_kwargs(),
             )
         return self._tv
 
