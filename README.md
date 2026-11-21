@@ -36,31 +36,62 @@ JanRemote/
 > the TV answers on the network. If diagnostics say *"TV is reachable, but the
 > secure MQTT connection failed"*, extract the certificate once, as follows.
 
-### Obtaining the client certificate (Windows walkthrough)
+### Obtaining the client certificate
 
-The certificate ships inside the official Hisense remote app (RemoteNOW / VIDAA)
-as a PKCS#12 keystore. One-time extraction:
+Two options. **Option A** is a two-minute job; **Option B** extracts from the
+official APK yourself.
 
-1. **Get the APK** — download the RemoteNOW APK from
-   [APKMirror](https://www.apkmirror.com/apk/hisense/remotenow/) (any recent
-   version) on your PC. You don't need to install it.
+#### Option A — download the published cert pair (easiest)
 
-2. **Run the extractor** (from the JanRemote folder, venv active):
-   ```powershell
-   python tools\extract_cert.py C:\Users\you\Downloads\RemoteNow-2.x.x.apk
-   ```
-   It finds the keystore inside the APK (canonical or obfuscated name),
-   decrypts it, and writes `certs\vidaa_client.pem` + `certs\vidaa_client.key`.
+The community has already extracted and published the certificate (same files
+the official VIDAA app uses). On Windows, from the JanRemote folder:
 
-3. **Restart `python app.py`.** The startup log should say
-   `Using client certificate from ...certs` instead of warning about a missing
-   certificate. Then run diagnostics again — the MQTT handshake should now
-   succeed, and you can pair.
+```powershell
+mkdir certs
+curl.exe -L -o certs\vidaa_client.pem https://raw.githubusercontent.com/adamazad/vidaa-remote/HEAD/certs/vidaa_client.pem
+curl.exe -L -o certs\vidaa_client.key https://raw.githubusercontent.com/adamazad/vidaa-remote/HEAD/certs/vidaa_client.key
+```
 
-<details><summary>Manual extraction (if you prefer Git Bash + openssl)</summary>
+(macOS/Linux: `mkdir -p certs && cd certs && curl -LO ...` for both URLs.)
+
+You can verify what you downloaded — it should print
+`CN=VidaaAppAndroidV01`, issuer `CN=RemoteCA`, valid 2024–2034:
 
 ```bash
-mkdir apk && cd apk && unzip ~/Downloads/RemoteNow-*.apk
+openssl x509 -in certs/vidaa_client.pem -noout -subject -issuer -dates
+```
+
+> Legal note: this is Hisense's proprietary certificate, published by third
+> parties for interoperability. Download it for use with **your own TV** only;
+> do not redistribute it (don't commit it to any repo).
+
+#### Option B — extract it from the official APK yourself
+
+1. Install the current **"VIDAA Smart TV"** app by Hisense on an Android
+   phone (Google Play), or download its APK from a mirror (package name
+   `com.universal.remote.multi`). The **old RemoteNOW** app (package
+   `com.universal.remote.ms`) contains a pre-2024 certificate that will NOT
+   work with 2024+ firmware — don't use it.
+
+2. Run the extractor (from the JanRemote folder, venv active):
+   ```powershell
+   python tools\extract_cert.py C:\Users\you\Downloads\vidaa-smart-tv.apk
+   ```
+   It finds the PKCS#12 keystore inside the APK (canonical or obfuscated
+   name), decrypts it with the publicly documented password, and writes
+   `certs\vidaa_client.pem` + `certs\vidaa_client.key`.
+
+#### Then
+
+Restart `python app.py`. The startup log should say
+`Using client certificate from ...certs` instead of warning about a missing
+certificate. Turn the TV **on** (not standby — the PIN needs the screen), tap
+the status text to run diagnostics, and pair.
+
+<details><summary>Manual extraction (Git Bash + openssl)</summary>
+
+```bash
+mkdir apk && cd apk && unzip ~/Downloads/vidaa-smart-tv.apk
 PK12=$(find . -iname "*.p12" | head -1)
 openssl pkcs12 -in "$PK12" -clcerts -nokeys \
   -passin pass:186e990688070325a1c4b0ce275d2388 -out vidaa_client.pem
@@ -69,11 +100,6 @@ openssl pkcs12 -in "$PK12" -nocerts -nodes \
 mkdir -p ../certs && cp vidaa_client.pem vidaa_client.key ../certs/
 ```
 </details>
-
-> **Why the app can't just ship this file:** the keystore is Hisense's
-> proprietary material — the same reason pyvidaa refuses to redistribute it.
-> Extracting your own copy for your own TV is personal interoperability;
-> redistributing it (including committing it to a repo) is not.
 
 ## 2. Install & run
 
