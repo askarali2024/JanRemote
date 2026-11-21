@@ -45,39 +45,35 @@ as a PKCS#12 keystore. One-time extraction:
    [APKMirror](https://www.apkmirror.com/apk/hisense/remotenow/) (any recent
    version) on your PC. You don't need to install it.
 
-2. **Open it as an archive** — an APK is a zip. In Git Bash:
-   ```bash
-   mkdir apk && cd apk
-   unzip ~/Downloads/RemoteNow-*.apk
+2. **Run the extractor** (from the JanRemote folder, venv active):
+   ```powershell
+   python tools\extract_cert.py C:\Users\you\Downloads\RemoteNow-2.x.x.apk
    ```
-   Find the keystore — it's `assets/client_mobile_android.p12` in most builds,
-   or an obfuscated name like `res/3R.p12` in newer ones:
-   ```bash
-   find . -iname "*.p12"
-   ```
+   It finds the keystore inside the APK (canonical or obfuscated name),
+   decrypts it, and writes `certs\vidaa_client.pem` + `certs\vidaa_client.key`.
 
-3. **Convert it to PEM** (in Git Bash — it ships with `openssl`; the keystore
-   password is the one publicly documented in pyvidaa's protocol analysis):
-   ```bash
-   PK12=$(find . -iname "*.p12" | head -1)
-   openssl pkcs12 -in "$PK12" -clcerts -nokeys \
-     -passin pass:186e990688070325a1c4b0ce275d2388 -out vidaa_client.pem
-   openssl pkcs12 -in "$PK12" -nocerts -nodes \
-     -passin pass:186e990688070325a1c4b0ce275d2388 -out vidaa_client.key
-   ```
-
-4. **Put the two files in the project's `certs/` folder:**
-   ```bash
-   mkdir -p /path/to/JanRemote/certs
-   cp vidaa_client.pem vidaa_client.key /path/to/JanRemote/certs/
-   ```
-   (Alternatively: `%USERPROFILE%\.config\pyvidaa\certs\`, or set the
-   `PYVIDAA_CERT_DIR` environment variable.)
-
-5. **Restart `python app.py`.** The startup log should say
+3. **Restart `python app.py`.** The startup log should say
    `Using client certificate from ...certs` instead of warning about a missing
    certificate. Then run diagnostics again — the MQTT handshake should now
    succeed, and you can pair.
+
+<details><summary>Manual extraction (if you prefer Git Bash + openssl)</summary>
+
+```bash
+mkdir apk && cd apk && unzip ~/Downloads/RemoteNow-*.apk
+PK12=$(find . -iname "*.p12" | head -1)
+openssl pkcs12 -in "$PK12" -clcerts -nokeys \
+  -passin pass:186e990688070325a1c4b0ce275d2388 -out vidaa_client.pem
+openssl pkcs12 -in "$PK12" -nocerts -nodes \
+  -passin pass:186e990688070325a1c4b0ce275d2388 -out vidaa_client.key
+mkdir -p ../certs && cp vidaa_client.pem vidaa_client.key ../certs/
+```
+</details>
+
+> **Why the app can't just ship this file:** the keystore is Hisense's
+> proprietary material — the same reason pyvidaa refuses to redistribute it.
+> Extracting your own copy for your own TV is personal interoperability;
+> redistributing it (including committing it to a repo) is not.
 
 ## 2. Install & run
 
