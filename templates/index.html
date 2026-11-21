@@ -176,7 +176,7 @@
     <div class="flex gap-2">
       <input id="textInput" type="text" placeholder="Type to search on the TV…" autocomplete="off"
         onkeydown="if(event.key==='Enter')sendText()"
-        class="flex-1 min-w-0 bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm placeholder-neutral-600 focus:outline-none focus:border-emerald-500/60" />
+        class="flex-1 min-w-0 bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-base placeholder-neutral-600 focus:outline-none focus:border-emerald-500/60" />
       <button onclick="sendText()" class="btn px-5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-semibold text-sm active:bg-emerald-500/25">Send</button>
     </div>
     <p class="text-[11px] text-neutral-600 mt-2">Focus a search field on the TV first. Some firmware ignores direct text input — use the D-pad then.</p>
@@ -198,17 +198,17 @@
       <label class="block mb-4">
         <span class="text-xs text-neutral-400 mb-1 block">TV name</span>
         <input id="cfgName" type="text" value="Hisense TV"
-          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-emerald-500/60" />
+          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-emerald-500/60" />
       </label>
       <label class="block mb-4">
         <span class="text-xs text-neutral-400 mb-1 block">TV IP address</span>
         <input id="cfgIp" type="text" inputmode="url" placeholder="192.168.1.50"
-          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-emerald-500/60" />
+          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-emerald-500/60" />
       </label>
       <label class="block mb-4">
         <span class="text-xs text-neutral-400 mb-1 block">TV MAC address <span class="text-neutral-600">(for Wake-on-LAN)</span></span>
         <input id="cfgMac" type="text" placeholder="AA:BB:CC:DD:EE:FF"
-          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-emerald-500/60" />
+          class="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-3 text-base focus:outline-none focus:border-emerald-500/60" />
       </label>
 
       <button onclick="discover()" id="discoverBtn"
@@ -311,7 +311,7 @@ async function refreshStatus() {
   if (!s.configured) {
     dot.className = 'inline-block w-2 h-2 rounded-full bg-neutral-600 align-middle';
     txt.textContent = 'not set up';
-    openSettings(true);
+    if ($('settingsModal').classList.contains('hidden')) openSettings(true);
     return;
   }
   $('tvName').textContent = s.name || 'JanRemote';
@@ -361,9 +361,13 @@ async function powerOff() {
 /* ---------- settings / setup ---------- */
 let everConfigured = false;
 function openSettings(firstTime = false) {
+  const wasHidden = $('settingsModal').classList.contains('hidden');
   $('settingsTitle').textContent = firstTime ? 'Set up your TV' : 'Settings';
   $('settingsExtras').classList.toggle('hidden', firstTime);
   show('settingsModal');
+  /* Only prefill on open (hidden -> shown). Never while the modal is already
+     open, or the 4s status poll would wipe whatever the user is typing. */
+  if (!wasHidden) return;
   api('GET', '/api/config').then((c) => {
     if (!c) return;
     $('cfgName').value = c.name || 'Hisense TV';
