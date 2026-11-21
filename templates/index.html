@@ -91,11 +91,11 @@
       <span id="volLabel" class="text-sm font-bold text-emerald-400 tabular-nums">--</span>
     </div>
     <div class="flex items-center gap-3">
-      <button data-repeat onclick="api('POST','/api/volume/down')" class="btn w-11 h-11 shrink-0 rounded-xl bg-neutral-800 active:bg-neutral-700 text-lg font-bold">−</button>
+      <button data-repeat onclick="volDown()" class="btn w-11 h-11 shrink-0 rounded-xl bg-neutral-800 active:bg-neutral-700 text-lg font-bold">−</button>
       <input id="volSlider" type="range" min="0" max="100" value="50" class="w-full" />
-      <button data-repeat onclick="api('POST','/api/volume/up')" class="btn w-11 h-11 shrink-0 rounded-xl bg-neutral-800 active:bg-neutral-700 text-lg font-bold">+</button>
+      <button data-repeat onclick="volUp()" class="btn w-11 h-11 shrink-0 rounded-xl bg-neutral-800 active:bg-neutral-700 text-lg font-bold">+</button>
     </div>
-    <button onclick="api('POST','/api/volume/mute')" class="btn mt-3 w-full py-2.5 rounded-xl bg-neutral-800 active:bg-neutral-700 text-sm font-semibold text-neutral-300">
+    <button onclick="toggleMute()" class="btn mt-3 w-full py-2.5 rounded-xl bg-neutral-800 active:bg-neutral-700 text-sm font-semibold text-neutral-300">
       <svg class="w-4 h-4 inline mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path d="M11 5 6 9H2v6h4l5 4V5zM22 9l-6 6M16 9l6 6"/>
       </svg>
@@ -355,6 +355,19 @@ slider.addEventListener('input', () => {
   volTimer = setTimeout(() => api('POST', '/api/volume', { level: +slider.value }), 250);
 });
 updateSlider(50);
+
+/* ---------- volume ---------- */
+async function volUp() {
+  const r = await api('POST', '/api/volume/up');
+  if (r && typeof r.volume === 'number') { $('volSlider').value = r.volume; updateSlider(r.volume); }
+}
+async function volDown() {
+  const r = await api('POST', '/api/volume/down');
+  if (r && typeof r.volume === 'number') { $('volSlider').value = r.volume; updateSlider(r.volume); }
+}
+async function toggleMute() {
+  await api('POST', '/api/volume/mute');
+}
 
 /* ---------- power ---------- */
 async function powerOn() {

@@ -18,6 +18,7 @@ import logging
 import re
 import socket
 import threading
+import time
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -227,6 +228,27 @@ controller = TVController()
 
 app = FastAPI(title="JanRemote")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+# --------------------------------------------------------------------------
+# Volume helpers
+# --------------------------------------------------------------------------
+
+
+def _fresh_volume(tv: VidaaTV, prev: Optional[int], timeout: float = 1.5) -> Optional[int]:
+    """Wait briefly for the volume-change broadcast, then read the cache.
+
+    This firmware does not answer the getvolume request — it only broadcasts
+    the new value when volume changes. So after sending a key we watch the
+    broadcast cache until it moves (or time out and report whatever we have).
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        vol = tv.cached_volume
+        if vol is not None and vol != prev:
+            return vol
+        time.sleep(0.05)
+    return tv.cached_volume
 
 
 # --------------------------------------------------------------------------
@@ -454,10 +476,11 @@ def status():
         tv = controller.client()
         out["connected"] = tv.is_connected
         out["on"] = tv.is_on()
-        try:
-            out["volume"] = tv.get_volume(timeout=2)
-        except Exception:
-            out["volume"] = tv.cached_volume
+        # This firmware doesn't answer getvolume; the broadcast cache is the
+        # fresh source (it updates the instant volume changes).
+        out["volume"] = tv.cached_volume
+        if out["volume"] is None:
+            out["volume"] = tv.get_volume(timeout=1)
         out["muted"] = tv.is_muted
         state = tv.get_state(timeout=2) or tv.state or {}
         out["state"] = state.get("statetype") if isinstance(state, dict) else None
@@ -500,28 +523,37 @@ def set_volume(payload: VolumePayload):
 @app.post("/api/volume/up")
 def volume_up():
     try:
-        controller.run(lambda tv: tv.volume_up(), failure="Volume up failed.")
+        tv = controller.client()
+        prev = tv.cached_volume
+        if not tv.volume_up():
+            raise RemoteError("Volume up failed — is the TV on?")
     except RemoteError as exc:
         return api_error(exc)
-    return {"ok": True}
+    return {"ok": True, "volume": _fresh_volume(tv, prev), "muted": tv.is_muted}
 
 
 @app.post("/api/volume/down")
 def volume_down():
     try:
-        controller.run(lambda tv: tv.volume_down(), failure="Volume down failed.")
+        tv = controller.client()
+        prev = tv.cached_volume
+        if not tv.volume_down():
+            raise RemoteError("Volume down failed — is the TV on?")
     except RemoteError as exc:
         return api_error(exc)
-    return {"ok": True}
+    return {"ok": True, "volume": _fresh_volume(tv, prev), "muted": tv.is_muted}
 
 
 @app.post("/api/volume/mute")
 def volume_mute():
     try:
-        controller.run(lambda tv: tv.mute(), failure="Mute toggle failed.")
+        tv = controller.client()
+        prev = tv.cached_volume
+        if not tv.mute():
+            raise RemoteError("Mute toggle failed — is the TV on?")
     except RemoteError as exc:
         return api_error(exc)
-    return {"ok": True}
+    return {"ok": True, "volume": _fresh_volume(tv, prev), "muted": tv.is_muted}
 
 
 @app.get("/api/sources")
