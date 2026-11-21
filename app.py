@@ -29,7 +29,7 @@ from pydantic import BaseModel
 
 try:
     from pyvidaa import VidaaTV, discover_all, get_key
-    from pyvidaa.topics import get_topic
+    from pyvidaa.topics import get_topic, TOPIC_SET_SOURCE, SOURCE_MAP
     from pyvidaa.wol import send_wol
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(
@@ -570,14 +570,30 @@ def get_sources():
 
 @app.post("/api/source")
 def set_source(payload: SourcePayload):
+    wanted = payload.source.strip()
+    if not wanted:
+        return JSONResponse(status_code=400, content={"detail": "No source given."})
     try:
-        controller.run(
-            lambda tv: tv.set_source(payload.source.strip().lower()),
-            failure=f"Could not switch to {payload.source}.",
-        )
+        tv = controller.client()
+        # Resolve against the TV's own source list: source IDs vary by
+        # firmware (this TV uses "HDMI1"/"Media0" strings, pyvidaa's built-in
+        # map assumes numeric ids), so the sourcelist is the only authority.
+        source_id = None
+        label = wanted
+        for s in (tv.get_sources(timeout=5) or []):
+            if wanted in (s.get("sourceid"), s.get("sourcename"), s.get("displayname")):
+                source_id = s.get("sourceid")
+                label = s.get("displayname") or s.get("sourcename") or source_id
+                break
+        if source_id is None:
+            # Not in the TV's list — try pyvidaa's legacy name map, else pass through.
+            source_id = SOURCE_MAP.get(wanted.lower(), wanted)
+        ok = tv._publish(get_topic(TOPIC_SET_SOURCE, tv.client_id), {"sourceid": source_id})
+        if not ok:
+            raise RemoteError(f"Could not switch to {label} — is the TV on?")
     except RemoteError as exc:
         return api_error(exc)
-    return {"ok": True, "message": f"Switched to {payload.source}."}
+    return {"ok": True, "message": f"Switched to {label}."}
 
 
 @app.get("/api/apps")

@@ -483,7 +483,9 @@ async function loadQuickSwitchers(alertOnFail = false) {
     sel.innerHTML = '<option value="">Select input…</option>' +
       src.sources.map((s) => {
         const label = s.displayname || s.sourcename || s.sourceid;
-        return `<option value="${s.sourcename || s.sourceid}">${label}</option>`;
+        /* value = the TV's own sourceid (e.g. "HDMI1", "Media0") — the only
+           ID the changesource action reliably accepts on this firmware. */
+        return `<option value="${s.sourceid || s.sourcename}">${label}</option>`;
       }).join('');
     if (prev) sel.value = prev;
   } else if (alertOnFail && !src) {
