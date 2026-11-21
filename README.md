@@ -2,6 +2,9 @@
 
 A lightweight, mobile-first **local web remote for Hisense VIDAA OS TVs**.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 Runs a small FastAPI server on your computer that talks to the TV's built-in
 MQTT broker (port 36669) via the [pyvidaa](https://pypi.org/project/pyvidaa/)
 library. You open one page on your phone and get a full remote: power,
